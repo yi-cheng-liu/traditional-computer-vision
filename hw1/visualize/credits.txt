@@ -1,0 +1,2 @@
+mysterydata/
+Data courtesy NASA SDO/AIA: 2017/09/06, 2012/08/05, 2012/06/05

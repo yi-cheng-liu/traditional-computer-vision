@@ -1,0 +1,2 @@
+105 146 116 120
+Image 1 was taken with normal room light. Image 2 was taken with braking light of a vehicle
