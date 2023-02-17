@@ -23,7 +23,25 @@ def make_synthetic_view(img, corners, size):
     Output - A fronto-parallel view of selected pixels (the book as if the cover is
             parallel to the image plane), using 100 pixels per inch.
     '''
-    return None
+    height = size[0,0]
+    width = size[0,1]
+    
+    # method 1: use fit_homography written in homography.py
+    final_point = np.float32([(0, 0), (100*width-1, 0), (100*width-1, 100*height-1), (0, 100*height-1)])
+    data = np.hstack((corners, final_point))
+    print(data)
+    H = fit_homography(data)
+    print(H)
+    output = cv2.warpPerspective(img, H, (int(100*width), int(100*height)))
+    
+    # # method 2: use cv2.findHomography
+    # # 1. locate the final destination
+    # final_point = np.float32([(0, 0), (100*width, 0), (100*width, 100*height), (0, 100*height)])
+    # # 2. calculate the homography matrix
+    # H = cv2.findHomography(corners, final_point)[0]
+    # output = cv2.warpPerspective(img, H, (int(100*width), int(100*height)))
+
+    return output
     
 if __name__ == "__main__":
     # Task 5

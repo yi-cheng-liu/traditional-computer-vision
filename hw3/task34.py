@@ -14,7 +14,6 @@ def p3(data):
     y = data[:, 1]
     x_prime = data[:, 2]
     y_prime = data[:, 3]
-
     # Construct A and b matrices
     A = np.zeros((2*len(x), 6)) # (2n, 6)
     b = np.zeros(2*len(x))      # (2n, )
@@ -24,15 +23,12 @@ def p3(data):
         b[2*i] = x_prime[i]
         b[2*i+1] = y_prime[i]
     
-    ans = np.linalg.lstsq(A, b, rcond=None)[0]
-    
-    
     # 2. fit a transformation y=Sx+t
+    ans = np.linalg.lstsq(A, b, rcond=None)[0]
     
     # 3. transform the points
     # [x_trans, y_trans].T = A([x, y].T) + b
     x_trans, y_trans = np.dot(ans[:4].reshape(2, 2), np.vstack([x, y])) + ans[4:].reshape(2, 1)
-
     
     # 4. plot the original points and transformed points
     return x, y, x_prime, y_prime, x_trans, y_trans
@@ -44,10 +40,15 @@ def p4():
 
 if __name__ == "__main__":
     # Task 3
+    # 1. load the data
     data_1 = np.load('task3/points_case_1.npy')
     data_2 = np.load('task3/points_case_2.npy')
+    
+    # 2. calculate the points 
     x_1, y_1, x_1_prime, y_1_prime, x_1_trans, y_1_trans = p3(data_1)
     x_2, y_2, x_2_prime, y_2_prime, x_2_trans, y_2_trans = p3(data_2)
+    
+    # 3. plot the diagram
     plt.figure(1)
     plt.scatter(x_1, y_1, color='blue', label='data')
     plt.scatter(x_1_prime, y_1_prime, color='green', label='data_prime')
