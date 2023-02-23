@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from common import save_img, read_img
 from homography import fit_homography, homography_transform
+from PIL import Image
 import os
 import cv2
 
@@ -45,13 +46,17 @@ def make_synthetic_view(img, corners, size):
     
 if __name__ == "__main__":
     # Task 5
-
-    case_name = "threebody"
-
-    I = read_img(os.path.join("task5",case_name,"book.jpg"))
-    corners = np.load(os.path.join("task5",case_name,"corners.npy"))
-    size = np.load(os.path.join("task5",case_name,"size.npy"))
-
-    result = make_synthetic_view(I, corners, size)
-    save_img(result, case_name+"_frontoparallel.jpg")
-
+    
+    cases = ["palmer", "threebody"]
+    for case_name in cases:
+        # 1. read the files in the task5 folder
+        I = read_img(os.path.join("task5",case_name,"book.jpg"))
+        corners = np.load(os.path.join("task5",case_name,"corners.npy"))
+        size = np.load(os.path.join("task5",case_name,"size.npy"))
+        
+        # 2. make synthetic view and save the image
+        result = make_synthetic_view(I, corners, size)
+        if not os.path.exists("./task5/result"):
+            os.makedirs("./task5/result")
+            
+        save_img(result, "task5_result_"+case_name+"_frontoparallel.jpg")

@@ -38,7 +38,9 @@ def fit_homography(XY):
         
     # 4. calculate the homography matrix, and the last entry is 1
     [U, S, Vt] = np.linalg.svd(A)
-    print(U.shape, S.shape, Vt.shape)
+    print('U dimention: ', U.shape)
+    print('S dimention: ', S.shape)
+    print('Vt dimention: ', Vt.shape)
     H = Vt[-1].reshape(3, 3)
     H = H * (1/H[2,2])
         
@@ -70,24 +72,5 @@ if __name__ == "__main__":
     #If you want to test your homography, you may want write any code here, safely
     #enclosed by a if __name__ == "__main__": . This will ensure that if you import
     #the code, you don't run your test code too
-    
-    # 1. read the data and extract the x, y, x', y'
-    data = np.load('task4/points_case_9.npy')
-    x = data[:, 0]
-    y = data[:, 1]
-    x_prime = data[:, 2]
-    y_prime = data[:, 3]
-    
-    # 2. calcualte the Homography matrix, and dot with p matrix
-    H = fit_homography(data)
-    p_trans = np.vstack((x,y,np.ones(len(x)))).T
-    p_transform = np.dot(H, p_trans.T)
-    print(H)
-    
-    # 3. print out the results 
-    plt.scatter(x, y, color='blue')
-    plt.scatter(x_prime, y_prime, color='green')
-    plt.scatter(p_transform[0, :], p_transform[1, :], color='red')
-    plt.show()
     
     pass
