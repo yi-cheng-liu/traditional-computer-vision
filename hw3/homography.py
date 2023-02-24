@@ -38,9 +38,9 @@ def fit_homography(XY):
         
     # 4. calculate the homography matrix, and the last entry is 1
     [U, S, Vt] = np.linalg.svd(A)
-    print('U dimention: ', U.shape)
-    print('S dimention: ', S.shape)
-    print('Vt dimention: ', Vt.shape)
+    # print('U dimention: ', U.shape)
+    # print('S dimention: ', S.shape)
+    # print('Vt dimention: ', Vt.shape)
     H = Vt[-1].reshape(3, 3)
     H = H * (1/H[2,2])
         
@@ -66,11 +66,40 @@ def RANSAC_fit_homography(XY, eps=1, nIters=1000):
     '''
     bestH, bestCount, bestInliers = np.eye(3), -1, np.zeros((XY.shape[0],))
     bestRefit = np.eye(3)
-    return bestRefit
+    
+    for i in range(nIters):
+        # find four random points of XY
+        XY = XY.astype(int)
+        sample_points = XY.shape[0]
+        sample = XY[np.random.choice(sample_points, 4, replace=False), :] # replace - can only be select one time
+        # print("sample", sample)
+        
+        # calculate the homography matrix, and transform the H
+        H = fit_homography(sample)
+        XY_orginal = XY[:, :2]
+        XY_prime = XY[:, 2:]
+        XY_transformed = homography_transform(XY_orginal, H)
+        
+        # find the distance between the xy_transformed and the xy_prime
+        dist = np.linalg.norm(XY_prime - XY_transformed, axis=1)
+        
+        # find the inliners and update the best one
+        inliners = dist < eps
+        if(np.sum(inliners) > bestCount):
+            bestH = fit_homography(XY[inliners])
+            bestCount = np.sum(inliners)
+            bestInliers = inliners  
+        bestRefit = fit_homography(XY[bestInliers])
+
+        return bestRefit
 
 if __name__ == "__main__":
     #If you want to test your homography, you may want write any code here, safely
     #enclosed by a if __name__ == "__main__": . This will ensure that if you import
     #the code, you don't run your test code too
-    
+    point_case_5 = np.load("./task4/points_case_5.npy")
+    H = fit_homography(point_case_5)
+    best_H = RANSAC_fit_homography(point_case_5)
+    print(H)
+    print(best_H)
     pass

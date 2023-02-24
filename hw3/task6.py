@@ -83,65 +83,106 @@ def draw_matches(img1, img2, kp1, kp2, matches):
     return stacked_img
 
 
-# def warp_and_combine(img1, img2, H):
-#     '''
-#     You may want to write a function that merges the two images together given
-#     the two images and a homography: once you have the homography you do not
-#     need the correspondences; you just need the homography.
-#     Writing a function like this is entirely optional, but may reduce the chance
-#     of having a bug where your homography estimation and warping code have odd
-#     interactions.
+def warp_and_combine(img1, img2, H):
+    '''
+    You may want to write a function that merges the two images together given
+    the two images and a homography: once you have the homography you do not
+    need the correspondences; you just need the homography.
+    Writing a function like this is entirely optional, but may reduce the chance
+    of having a bug where your homography estimation and warping code have odd
+    interactions.
     
-#     Input - img1: Input image 1 of shape (H1,W1,3)
-#             img2: Input image 2 of shape (H2,W2,3)
-#             H: homography mapping betwen them
-#     Output - V: stitched image of size (?,?,3); unknown since it depends on H
-#     '''
-#     V = None
-#     return V
+    Input - img1: Input image 1 of shape (H1,W1,3)
+            img2: Input image 2 of shape (H2,W2,3)
+            H: homography mapping betwen them
+    Output - V: stitched image of size (?,?,3); unknown since it depends on H
+    '''
+    # Get the dimensions of the input images
+    h1, w1 = img1.shape[:2]
+    h2, w2 = img2.shape[:2]
+    
+    # Compute the size of the output image based on the homography
+    corners = np.array([[0     ,      0, 1], 
+                        [0     , h1 - 1, 1], 
+                        [w1 - 1, h1 - 1, 1], 
+                        [w1 - 1, 0     , 1]])
+    corners_warped = np.dot(H, corners.T).T
+    corners_warped /= corners_warped[:, 2:]
+    xmin = int(min(corners_warped[:, 0]))
+    xmax = int(max(corners_warped[:, 0]))
+    ymin = int(min(corners_warped[:, 1]))
+    ymax = int(max(corners_warped[:, 1]))
+    size = (xmax - xmin + 1, ymax - ymin + 1)
+    
+    # Compute the translation needed to move the second image to overlap with the first
+    tx = -xmin
+    ty = -ymin
+    
+    # Apply the homography and translation to the second image
+    img2_warped = cv2.warpPerspective(img2, np.dot(np.array([[1, 0, tx], [0, 1, ty], [0, 0, 1]]), H), size)
+    
+    # Create an output image of the appropriate size to hold both input images
+    V = np.zeros((max(h1, ymax), w1 + w2, 3), dtype=np.uint8)
+    
+    # Copy the first image to the left half of the output image
+    V[:h1, :w1, :] = img1
+    
+    # Copy the warped second image to the right half of the output image
+    V[ty:ty+h2, tx+w1:tx+w1+w2, :] = img2_warped
+    
+    return V
 
 
-# def make_warped(img1, img2):
-#     '''
-#     Take two images and return an image, putting together the full pipeline.
-#     You should return an image of the panorama put together.
+def make_warped(img1, img2):
+    '''
+    Take two images and return an image, putting together the full pipeline.
+    You should return an image of the panorama put together.
     
-#     Input - img1: Input image 1 of shape (H1,W1,3)
-#             img2: Input image 1 of shape (H2,W2,3)
+    Input - img1: Input image 1 of shape (H1,W1,3)
+            img2: Input image 1 of shape (H2,W2,3)
     
-#     Output - Final stitched image
-#     Be careful about:
-#     a) The final image size 
-#     b) Writing code so that you first estimate H and then merge images with H.
-#     The system can fail to work due to either failing to find the homography or
-#     failing to merge things correctly.
-#     '''
-#     stitched = None
-#     return stitched 
+    Output - Final stitched image
+    Be careful about:
+    a) The final image size 
+    b) Writing code so that you first estimate H and then merge images with H.
+    The system can fail to work due to either failing to find the homography or
+    failing to merge things correctly.
+    '''
+
+    stitched = None
+    return stitched 
 
 
 if __name__ == "__main__":
     
     # 1. read the image
     cases = ["eynsham", "florence2", "florence3", "florence3_alt", "lowetag", "mertonchapel", "mertoncourtyard", "vgg"]
-
-    for case_name in cases:
+    cases1 = ["eynsham"]
+    if not os.path.exists("./result/task6"):
+        os.makedirs("./result/task6")
+            
+    for case_name in cases1:
         p1 = read_img(os.path.join("task6", case_name, "p1.jpg"))
         p2 = read_img(os.path.join("task6", case_name, "p2.jpg"))
         
         # 2. get the keypoints and descriptor
-        kps1 = get_AKAZE(p1)[0]
-        kps2 = get_AKAZE(p2)[0]
-        desc1 = get_AKAZE(p1)[1]
-        desc2 = get_AKAZE(p2)[1]
+        kps1, desc1 = get_AKAZE(p1)
+        kps2, desc2 = get_AKAZE(p2)
         
-        # 3. calculate the distance
+        # 3. calculate the distance, find matches, draw the lines, and save img
         ratio = 0.7
-        dist = compute_distance(desc1, desc2)
         matches = find_matches(desc1, desc2, ratio)
         res = draw_matches(p1, p2, kps1, kps2, matches)
-        save_img(res, "task6_result_" + case_name + ".jpg")
-
+        save_img(res, "result/task6/task6_result_" + case_name + ".jpg")
+        
+        
+        XY = get_match_points(kps1, kps2, matches)
+        H = fit_homography(XY)
+        bestH = RANSAC_fit_homography(XY)
+        print("H", H)
+        print("bestH: ", bestH)
+        
+        # ans = warp_and_combine(p1, p2, H)
     # #Possible starter code; you might want to loop over the task 6 images
     # to_stitch = 'lowetag'
     # I1 = read_img(os.path.join('task6',to_stitch,'p1.jpg'))

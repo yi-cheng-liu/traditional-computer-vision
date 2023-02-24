@@ -47,16 +47,18 @@ def make_synthetic_view(img, corners, size):
 if __name__ == "__main__":
     # Task 5
     
+    # 1. make a folder for storing the result
+    if not os.path.exists("./result/task5"):
+            os.makedirs("./result/task5")
+    
+    # 2. iterate through the cases for the synthetic view result
     cases = ["palmer", "threebody"]
     for case_name in cases:
-        # 1. read the files in the task5 folder
+        # 2.1 read the files in the task5 folder
         I = read_img(os.path.join("task5",case_name,"book.jpg"))
         corners = np.load(os.path.join("task5",case_name,"corners.npy"))
         size = np.load(os.path.join("task5",case_name,"size.npy"))
         
-        # 2. make synthetic view and save the image
+        # 2.2 make synthetic view and save the image
         result = make_synthetic_view(I, corners, size)
-        if not os.path.exists("./task5/result"):
-            os.makedirs("./task5/result")
-            
-        save_img(result, "task5_result_"+case_name+"_frontoparallel.jpg")
+        save_img(result, "result/task5/task5_result_" + case_name + "_frontoparallel.jpg")
