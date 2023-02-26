@@ -5,6 +5,7 @@ You should write these
 import numpy as np
 import matplotlib.pyplot as plt
 from common import homography_transform
+import time
 
 def fit_homography(XY):
     '''
@@ -69,10 +70,8 @@ def RANSAC_fit_homography(XY, eps=1, nIters=1000):
     
     for i in range(nIters):
         # find four random points of XY
-        XY = XY.astype(int)
-        sample_points = XY.shape[0]
+        sample_points = len(XY)
         sample = XY[np.random.choice(sample_points, 4, replace=False), :] # replace - can only be select one time
-        # print("sample", sample)
         
         # calculate the homography matrix, and transform the H
         H = fit_homography(sample)
@@ -85,21 +84,24 @@ def RANSAC_fit_homography(XY, eps=1, nIters=1000):
         
         # find the inliners and update the best one
         inliners = dist < eps
-        if(np.sum(inliners) > bestCount):
-            bestH = fit_homography(XY[inliners])
-            bestCount = np.sum(inliners)
+        cur_count = np.sum(inliners)
+        if(cur_count > bestCount):
+            # bestH = fit_homography(XY[inliners])
+            bestCount = cur_count
             bestInliers = inliners  
-        bestRefit = fit_homography(XY[bestInliers])
+            bestRefit = fit_homography(XY[bestInliers])
 
-        return bestRefit
+    return bestRefit
 
 if __name__ == "__main__":
     #If you want to test your homography, you may want write any code here, safely
     #enclosed by a if __name__ == "__main__": . This will ensure that if you import
     #the code, you don't run your test code too
-    point_case_5 = np.load("./task4/points_case_5.npy")
-    H = fit_homography(point_case_5)
-    best_H = RANSAC_fit_homography(point_case_5)
-    print(H)
-    print(best_H)
+    
+    # # test the case that the H is silimar to best_H
+    # point_case_7 = np.load("./task4/points_case_7.npy")
+    # H = fit_homography(point_case_7)
+    # best_H = RANSAC_fit_homography(point_case_7)
+    # print(H)
+    # print(best_H)
     pass

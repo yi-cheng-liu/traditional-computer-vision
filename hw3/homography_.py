@@ -79,7 +79,6 @@ def RANSAC_fit_homography(XY, eps=1, nIters=1000):
         diff = target - transform
         error = np.linalg.norm(diff, axis = 0)
         inliers = error < eps
-        print(inliers)
         count = np.sum(inliers)
         if(count > bestCount):
             bestCount = count
@@ -104,7 +103,7 @@ if __name__ == "__main__":
     
     plt.scatter(case[:, 0], case[:, 1], label = 'orginal')
     plt.scatter(case[:, 2], case[:, 3], label = 'target')
-    # print(transform)
+    print(transform)
     plt.scatter(transform[0, :] / transform[2, :], transform[1, :] / transform[2, :], label = 'transform')
 #     plt.scatter(transform[0, :], transform[1, :], label = 'transform')
     plt.legend()

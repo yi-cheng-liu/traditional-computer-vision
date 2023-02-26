@@ -3,8 +3,8 @@ Task6 Code
 """
 import numpy as np
 import common 
-from common import save_img, read_img, get_match_points
-from homography_ import fit_homography, homography_transform, RANSAC_fit_homography
+from common import save_img, read_img
+from homography import fit_homography, homography_transform, RANSAC_fit_homography
 import os
 import cv2
 
@@ -90,6 +90,7 @@ def draw_matches(img1, img2, kp1, kp2, matches):
         end = (x2, y2 + h1)
         color = (0, 0, 255)
         thickness = 2
+        print(start, end)
         stacked = cv2.line(stacked, start, end, color, thickness)
     # save_img(stacked,"stacked.jpg")
     output = stacked
@@ -126,6 +127,7 @@ def warp_and_combine(img1, img2, H):
     height = int(max_x - min_x)
     width = int(max_y - min_y)
     warped_img2 = cv2.warpPerspective(img2, H, (width, height))
+    save_img(warped_img2, "task6_warped_img2.jpg")
 
     # save_img(warped_img2,"warpedim2.jpg")
     # merged = np.zeros((width, height, 3), dtype = np.uint8)
@@ -138,6 +140,7 @@ def warp_and_combine(img1, img2, H):
     merged[mask1] = warped_img2[mask1] / 2 + merged[mask1] / 2
     mask2 = np.logical_and(merged == 0, warped_img2 > 0)
     merged[mask2] = warped_img2[mask2]
+    save_img(merged, "task6_merged.jpg")
         
     return merged
 
@@ -184,10 +187,10 @@ def make_warped(img1, img2):
 
 
 if __name__ == "__main__":
-    case = 1
+    case = 2
     #Possible starter code; you might want to loop over the task 6 images
     to_stitch = ['eynsham', 'florence2', 'florence3', 'florence3_alt', 'lowetag', 'mertonchapel', 'mertoncourtyard', 'vgg']
-    to_switch = ['eynsham']
+    to_stitch = ['eynsham']
     if(case == 1):
         for i in range(len(to_stitch)):
             folder = to_stitch[i]
@@ -197,9 +200,8 @@ if __name__ == "__main__":
             keypoints2, descriptors2 = common.get_AKAZE(I2)
             matches = find_matches(descriptors1, descriptors2, 0.3)
             res = draw_matches(I1, I2, keypoints1, keypoints2, matches)
-            
     elif(case == 2):
-        folder = to_stitch[5]
+        folder = to_stitch[0]
         I1 = read_img(os.path.join('task6',folder,'p1.jpg'))
         I2 = read_img(os.path.join('task6',folder,'p2.jpg'))
         make_warped(I1, I2)
