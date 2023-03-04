@@ -132,32 +132,25 @@ def warp_and_combine(img1, img2, H):
     img1_warped_translated = cv2.warpPerspective(img1, H_translated, size)
     h1_trans, w1_trans = img1_warped_translated.shape[:2]
     
-    # create an output image for placing the right and the left
-    combined = np.zeros((max(h1_trans, ty + h2), max(w1_trans, tx+w2), 3), dtype=np.uint8)
-    
-    # place img1_tranlated in the left and img2 in the right
-    
-    if tx > 0 and ty > 0:
-        im1_x = (0, h1_trans)
-        im1_y = (0, w1_trans)
-        im2_x = (ty, ty + h2)
-        im2_y = (tx, tx + w2)
-        combined[im1_x[0]: im1_x[1], im1_y[0]:im1_y[1], :] = img1_warped_translated
-        combined[im2_x[0]: im2_x[1], im2_y[0]:im2_y[1], :] = img2
-        # combined[   : h1_trans,   :w1_trans, :] = img1_warped_translated
-        # combined[ ty:  ty + h2, tx:   tx+w2, :] = img2
+    # create a combined image and place img1_tranlated and img2
+    combined = np.zeros((max(h1_trans, ty+h2), max(w1_trans, tx+w2), 3), dtype=np.uint8)
+    im1_x = ( 0, h1_trans)
+    im1_y = ( 0, w1_trans)
+    im2_x = (ty,  ty + h2)
+    im2_y = (tx,  tx + w2)
         
     if tx < 0:
-        combined = np.zeros((max(h1_trans, ty + h2), max(w1_trans-tx, tx+w2-tx), 3), dtype=np.uint8)
-        combined[   : h1_trans,   -tx:w1_trans-tx, :] = img1_warped_translated
-        combined[ ty:  ty + h2, tx-tx:   tx+w2-tx, :] = img2
-    
+        combined = np.zeros((max(h1_trans, ty + h2), max(w1_trans-tx, w2), 3), dtype=np.uint8)
+        im1_y = (-tx, w1_trans - tx)
+        im2_y = (  0,            w2)
+
     if ty < 0:
         combined = np.zeros((max(h1_trans-ty, ty + h2-ty), max(w1_trans, tx+w2), 3), dtype=np.uint8)
-        combined[   -ty: h1_trans-ty,   :w1_trans, :] = img1_warped_translated
-        combined[ ty-ty:  ty + h2-ty, tx:   tx+w2, :] = img2
+        im1_x = (-ty, h1_trans - ty)
+        im2_x = (  0,            h2)
         
-        
+    combined[im1_x[0]: im1_x[1], im1_y[0]:im1_y[1], :] = img1_warped_translated
+    combined[im2_x[0]: im2_x[1], im2_y[0]:im2_y[1], :] = img2
     
     return combined
 
@@ -177,48 +170,48 @@ def make_warped(img1, img2):
     The system can fail to work due to either failing to find the homography or
     failing to merge things correctly.
     '''
+    # 1. get the keypoints and descriptor
+    kps1, desc1 = get_AKAZE(img1)
+    kps2, desc2 = get_AKAZE(img2)
+    
+    # 2. calculate the distance, get the Nx4 array of matches, and find the best Homography transform H
+    ratio = 0.6
+    matches = find_matches(desc1, desc2, ratio)
+    XY = get_match_points(kps1, kps2, matches)
+    bestH = RANSAC_fit_homography(XY)
+    
+    # 3. wrap the two images together
+    stitched = warp_and_combine(p1, p2, bestH)    
 
-    stitched = None
     return stitched 
 
 
 if __name__ == "__main__":
     
-    # 1. read the image
     cases = ["eynsham", "florence2", "florence3", "florence3_alt", "lowetag", "mertonchapel", "mertoncourtyard", "vgg"]
-    cases1 = ["eynsham"]
-    if not os.path.exists("./result/task6"):
-        os.makedirs("./result/task6")
+    
+    # create folder for the results
+    if not os.path.exists("./result/task6/draw_matches"):
+        os.makedirs("./result/task6/draw_matches")
+    if not os.path.exists("./result/task6/combined_images"):
+        os.makedirs("./result/task6/combined_images")
             
     for case_name in cases:
+        # read the images from task6 folder
         p1 = read_img(os.path.join("task6", case_name, "p1.jpg"))
         p2 = read_img(os.path.join("task6", case_name, "p2.jpg"))
         
-        # 2. get the keypoints and descriptor
+        # DRAW MATCHES
+        # 1. get the keypoints and descriptor
         kps1, desc1 = get_AKAZE(p1)
         kps2, desc2 = get_AKAZE(p2)
         
-        # 3. calculate the distance, find matches, draw the lines, and save img
+        # 2. calculate the distance, find matches, draw the lines, and save img
         ratio = 0.6
         matches = find_matches(desc1, desc2, ratio)
         res = draw_matches(p1, p2, kps1, kps2, matches)
-        save_img(res, "result/task6/task6_result_" + case_name + ".jpg")
+        save_img(res, "result/task6/draw_matches/" + case_name + "_matched.jpg")
         
-        point_case_6 = np.load("./task4/points_case_6.npy")
-        XY = get_match_points(kps1, kps2, matches)
-        H = fit_homography(XY)
-        bestH = RANSAC_fit_homography(XY)
-        # print("H", H)
-        # print("bestH: ", bestH)
-        print(case_name)
-        combined_img = warp_and_combine(p1, p2, bestH)
-        save_img(combined_img, "task6_"+case_name+"_combined.jpg")
-        
-        
-        # ans = warp_and_combine(p1, p2, H)
-    # #Possible starter code; you might want to loop over the task 6 images
-    # to_stitch = 'lowetag'
-    # I1 = read_img(os.path.join('task6',to_stitch,'p1.jpg'))
-    # I2 = read_img(os.path.join('task6',to_stitch,'p2.jpg'))
-    # res = make_warped(I1,I2)
-    # save_img(res,"result_"+to_stitch+".jpg")
+        # COMBINE IMAGES
+        combined_img = make_warped(p1, p2)
+        save_img(combined_img, "result/task6/combined_images/"+case_name+"_combined.jpg")

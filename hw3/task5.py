@@ -61,4 +61,4 @@ if __name__ == "__main__":
         
         # 2.2 make synthetic view and save the image
         result = make_synthetic_view(I, corners, size)
-        save_img(result, "result/task5/task5_result_" + case_name + "_frontoparallel.jpg")
+        save_img(result, "result/task5/"+case_name+"_frontoparallel.jpg")
