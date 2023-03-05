@@ -26,6 +26,7 @@ def compute_distance(desc1, desc2):
     dist = x_norm ** 2  + (y_norm ** 2).T - 2 * np.dot(desc1, desc2.T) # return (N, M)
     return dist
 
+
 def find_matches(desc1, desc2, ratioThreshold):
     '''
     Calculates the matches between the two sets of keypoint
@@ -53,6 +54,7 @@ def find_matches(desc1, desc2, ratioThreshold):
             matches.append([i, dist_idx[i, 0]])
 
     return np.array(matches)
+
 
 def draw_matches(img1, img2, kp1, kp2, matches):
     '''
@@ -97,63 +99,76 @@ def warp_and_combine(img1, img2, H):
             H: homography mapping betwen them
     Output - V: stitched image of size (?,?,3); unknown since it depends on H
     '''
-    
+    # 1. get the dimentions of the images
     h1, w1 = img1.shape[:2]
     h2, w2 = img2.shape[:2]
     
-    # compute the size of the output image based on the homography
-    corners_img1 = np.array([[0     ,      0, 1], 
-                             [0     , h1 - 1, 1], 
-                             [w1 - 1, h1 - 1, 1], 
-                             [w1 - 1, 0     , 1]])
-    corners_warped_img1 = (np.dot(H, corners_img1.T).T)
+    # 2. compute the size of the output image based on the homography
+    corners_img2 = np.array([[0     ,      0, 1], 
+                             [0     , h2 - 1, 1], 
+                             [w2 - 1, h2 - 1, 1], 
+                             [w2 - 1, 0     , 1]])
+    corners_warped_img2= (np.dot(H, corners_img2.T).T)
     
-    # normalize
-    corners_warped_img1 /= corners_warped_img1[:, 2:]
+    # 3. normalize the corners
+    corners_warped_img2 /= corners_warped_img2[:, 2:]
     
-    # find the smallest and largest of x and y, and find the size after the homography
-    xmin = int(min(corners_warped_img1[:, 0]))
-    xmax = int(max(corners_warped_img1[:, 0]))
-    ymin = int(min(corners_warped_img1[:, 1]))
-    ymax = int(max(corners_warped_img1[:, 1]))
+    # 4. find the smallest and largest of x and y, and find the size after the homography
+    xmin = int(min(corners_warped_img2[:, 0]))
+    xmax = int(max(corners_warped_img2[:, 0]))
+    ymin = int(min(corners_warped_img2[:, 1]))
+    ymax = int(max(corners_warped_img2[:, 1]))
     size = (xmax - xmin + 1, ymax - ymin + 1)
     
-    # compute the translation which the second image would have to overlap with
+    # 5. compute the translation which the second image would have to overlap with
     tx = -xmin
     ty = -ymin
     
-    # apply the homography and translation to the second image
+    # 6. apply the homography and translation to the second image
     translation_matrix = np.array([[1, 0, tx], 
                                    [0, 1, ty], 
                                    [0, 0,  1]])
     H_translated = np.dot(translation_matrix, H)
 
-    # use cv2.warpPerspective
-    img1_warped_translated = cv2.warpPerspective(img1, H_translated, size)
-    h1_trans, w1_trans = img1_warped_translated.shape[:2]
+    # 7. use cv2.warpPerspective
+    img2_warped_translated = cv2.warpPerspective(img2, H_translated, size)
+    h2_trans, w2_trans = img2_warped_translated.shape[:2]
     
-    # create a combined image and place img1_tranlated and img2
-    combined = np.zeros((max(h1_trans, ty+h2), max(w1_trans, tx+w2), 3), dtype=np.uint8)
-    im1_x = ( 0, h1_trans)
-    im1_y = ( 0, w1_trans)
-    im2_x = (ty,  ty + h2)
-    im2_y = (tx,  tx + w2)
+    # 8. create a combined image and place img1_tranlated and img2
+    combined = np.zeros((max(ty+h1, h2_trans), max(tx+w1, w2_trans), 3), dtype=np.uint8)
+    im1_x = ( ty,    ty+h1)
+    im1_y = ( tx,    tx+w1)
+    im2_x = (  0, h2_trans)
+    im2_y = (  0, w2_trans)
         
-    if tx < 0:
-        combined = np.zeros((max(h1_trans, ty + h2), max(w1_trans-tx, w2), 3), dtype=np.uint8)
-        im1_y = (-tx, w1_trans - tx)
-        im2_y = (  0,            w2)
+    if tx < 0 and ty > 0:
+        combined = np.zeros((max(ty+h1, h2_trans), max(w1, w2_trans-tx), 3), dtype=np.uint8)
+        im1_y = (  0,          w1)
+        im2_y = (-tx, w2_trans-tx)
 
-    if ty < 0:
-        combined = np.zeros((max(h1_trans-ty, ty + h2-ty), max(w1_trans, tx+w2), 3), dtype=np.uint8)
-        im1_x = (-ty, h1_trans - ty)
-        im2_x = (  0,            h2)
-        
-    combined[im1_x[0]: im1_x[1], im1_y[0]:im1_y[1], :] = img1_warped_translated
-    combined[im2_x[0]: im2_x[1], im2_y[0]:im2_y[1], :] = img2
+    elif tx > 0 and ty < 0:
+        combined = np.zeros((max(h1, h2_trans-ty), max(tx+w1, w2_trans), 3), dtype=np.uint8)
+        im1_x = (  0,          h1)
+        im2_x = (-ty, h2_trans-ty)
+    
+    elif tx < 0 and ty < 0:
+        combined = np.zeros((max(h1, h2_trans-ty), max(w1, w2_trans-tx), 3), dtype=np.uint8)
+        im1_y = (  0,          w1)
+        im2_y = (-tx, w2_trans-tx)
+        im1_x = (  0,          h1)
+        im2_x = (-ty, h2_trans-ty)
+    
+    combined[im1_x[0]: im1_x[1], im1_y[0]:im1_y[1], :] = img1
+    combined_img2 = np.zeros_like(combined)
+    combined_img2[im2_x[0]: im2_x[1], im2_y[0]:im2_y[1], :] = img2_warped_translated
+    
+    # 9. average the overlapping area
+    mask1 = np.logical_and(combined > 0, combined_img2 > 0)
+    combined[mask1] = combined_img2[mask1] / 2 + combined[mask1] / 2
+    mask2 = np.logical_and(combined == 0, combined_img2 > 0)
+    combined[mask2] = combined_img2[mask2]
     
     return combined
-
 
 def make_warped(img1, img2):
     '''
@@ -176,12 +191,12 @@ def make_warped(img1, img2):
     
     # 2. calculate the distance, get the Nx4 array of matches, and find the best Homography transform H
     ratio = 0.6
-    matches = find_matches(desc1, desc2, ratio)
-    XY = get_match_points(kps1, kps2, matches)
+    matches = find_matches(desc2, desc1, ratio)
+    XY = get_match_points(kps2, kps1, matches)
     bestH = RANSAC_fit_homography(XY)
     
     # 3. wrap the two images together
-    stitched = warp_and_combine(p1, p2, bestH)    
+    stitched = warp_and_combine(img1, img2, bestH)    
 
     return stitched 
 
@@ -189,7 +204,7 @@ def make_warped(img1, img2):
 if __name__ == "__main__":
     
     cases = ["eynsham", "florence2", "florence3", "florence3_alt", "lowetag", "mertonchapel", "mertoncourtyard", "vgg"]
-    
+    cases1 = ["florence3", "lowetag"]
     # create folder for the results
     if not os.path.exists("./result/task6/draw_matches"):
         os.makedirs("./result/task6/draw_matches")
@@ -213,5 +228,16 @@ if __name__ == "__main__":
         save_img(res, "result/task6/draw_matches/" + case_name + "_matched.jpg")
         
         # COMBINE IMAGES
+        print(case_name)
         combined_img = make_warped(p1, p2)
         save_img(combined_img, "result/task6/combined_images/"+case_name+"_combined.jpg")
+        
+    for case_name in cases1:
+        # read the images from task6 folder
+        p1 = read_img(os.path.join("result/task6/combined_images/", case_name+"_combined.jpg"))
+        p3 = read_img(os.path.join("task6", case_name, "p3.jpg"))
+        
+        # COMBINE IMAGES
+        print(case_name)
+        combined_img = make_warped(p1, p3)
+        save_img(combined_img, "result/task6/combined_images/"+case_name+"_combined_1_2_3.jpg")
