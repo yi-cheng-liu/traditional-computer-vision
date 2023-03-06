@@ -115,8 +115,6 @@ def improve_image(scene, template, transfer):
     # 2. change the transfer size to the size of the template
     tem_h, tem_w = template.shape[1], template.shape[0]
     transfer_resized = cv2.resize(transfer, (tem_h, tem_w))
-    print(template.shape)
-    print(transfer_resized.shape)
     
     # 2. calculate the distance, get the Nx4 array of matches, and find the best Homography transform H
     ratio = 0.6
@@ -130,14 +128,14 @@ def improve_image(scene, template, transfer):
 
 if __name__ == "__main__":
     # Task 7
-    scenes = ["bbb", 'florence', 'lacroix']
-    seals = ['michigan', 'monk', 'um']
-    
-    # create folder for the results
-    if not os.path.exists("./result/task7"):
-        os.makedirs("./result/task7")
+    scenes = ["bbb", 'florence', 'lacroix', 'lego']
+    seals = ['british', 'michigan', 'monk', 'um', 'wolverine', 'toysrus']
         
     for scene_name in scenes:
+        # create folder for the results
+        if not os.path.exists("./result/task7/"+scene_name):
+            os.makedirs("./result/task7/"+scene_name)
+
         for transfer in seals:
             # read the images from task7 folder
             scene = read_img(os.path.join('./task7/scenes', scene_name,'scene.jpg'))
@@ -145,7 +143,7 @@ if __name__ == "__main__":
             seal = read_img(os.path.join('./task7/seals/'+transfer+'.png'))
             
             # AUGMENT REALITY
-            print(scene_name)
+            print(scene_name+' - '+transfer)
             augmented_img = improve_image(scene, template, seal)
-            save_img(augmented_img, "result/task7/"+scene_name+"_"+transfer+"_augmented.jpg")
+            save_img(augmented_img, "result/task7/"+scene_name+"/"+transfer+"_augmented.jpg")
     pass
