@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 
 """
@@ -26,7 +27,11 @@ def f1(x1, w1, x2, w2, b, y):
     giving the derivative of the output L with respect to each input.
     """
     # Forward pass: compute loss
-    L = None
+    a1 = x1 * w1
+    a2 = x2 * w2
+    y_hat = a1 + a2 + b
+    d = y_hat - y
+    L = d**2
     ###########################################################################
     # TODO: Implement the forward pass for the computational graph f1 shown   #
     # in the homework description. Store the loss in the variable L.          #
@@ -36,8 +41,18 @@ def f1(x1, w1, x2, w2, b, y):
     ###########################################################################
 
     # Backward pass: compute gradients
-    grad_x1, grad_w1, grad_x2, grad_w2 = None, None, None, None
-    grad_b, grad_y = None, None
+    grad_L = 1.0
+    grad_d = 2 * d * grad_L
+    grad_y = -grad_d
+    grad_y_hat = grad_d
+    grad_b = grad_y_hat
+    grad_a1 = grad_d
+    grad_a2 = grad_d
+    grad_x1 = w1 * grad_a1
+    grad_w1 = x1 * grad_a1
+    grad_x2 = w2 * grad_a2
+    grad_w2 = x2 * grad_a2
+    
     ###########################################################################
     # TODO: Implement the backward pass for the computational graph f1 shown  #
     # in the homework description. Store the gradients for each input         #
@@ -70,7 +85,12 @@ def f2(x):
       respect to the input x
     """
     # Forward pass: Compute output
-    y = None
+    d = 2 * x
+    e = np.exp(d)
+    t = e - 1
+    b = e + 1
+    y = t/b
+    
     ###########################################################################
     # TODO: Implement the forward pass for the computational graph f2 shown   #
     # in the homework description. Store the output in the variable y.        #
@@ -80,7 +100,12 @@ def f2(x):
     ###########################################################################
 
     # Backward pass: Compute gradients
-    grad_x = None
+    grad_y = 1.0
+    grad_b = grad_y * -(b**-2) * t
+    grad_t = grad_y * (b**-1)
+    grad_e = grad_t + grad_b
+    grad_d = grad_e * np.exp(d)
+    grad_x = 2 * grad_d
     ###########################################################################
     # TODO: Implement the backward pass for the computational graph f2 shown  #
     # in the homework description. Store the gradients for each input         #
@@ -115,7 +140,16 @@ def f3(s1, s2, y):
     """
     assert y == 1 or y == 2
     # Forward pass: Compute loss
-    L = None
+    e1 = np.exp(s1)
+    e2 = np.exp(s2)
+    d = e1 + e2
+    p1 = e1/d
+    p2 = e2/d
+    if y == 1:
+        p = p1
+    elif y == 2:
+        p = p2
+    L = -np.log(p)
     ###########################################################################
     # TODO: Implement the forward pass for the computational graph f3 shown   #
     # in the homework description. Store the loss in the variable L.          #
@@ -125,7 +159,24 @@ def f3(s1, s2, y):
     ###########################################################################
 
     # Backward pass: Compute gradients
-    grad_s1, grad_s2 = None, None
+    grad_L = 1.0
+    grad_p = grad_L * -(1/p)
+    if y == 1:
+        grad_p1 = grad_p
+        grad_p2 = 0
+    elif y == 2:
+        grad_p2 = grad_p
+        grad_p1 = 0
+    grad_d1 = grad_p1 * -(d**-2) * e1
+    grad_d2 = grad_p2 * -(d**-2) * e2
+    grad_d = grad_d1 + grad_d2
+    
+    grad_e1 = grad_p1 * (d**-1) + grad_d
+    grad_s1 = grad_e1 * np.exp(s1)
+    
+    grad_e2 = grad_p2 * (d**-1) + grad_d
+    grad_s2 = grad_e2 * np.exp(s2)
+    
     ###########################################################################
     # TODO: Implement the backward pass for the computational graph f3 shown  #
     # in the homework description. Store the gradients for each input         #

@@ -58,6 +58,7 @@ def gradcheck_two_layer_net_helper(net):
     grad_diffs = gradcheck_classifier(model, X, grad_scores)
     return grad_diffs
 
+
 def main():
     gradcheck_linear_classifier()
     gradcheck_two_layer_net()

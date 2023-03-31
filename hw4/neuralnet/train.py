@@ -9,6 +9,9 @@ from optim import SGD
 from layers import softmax_loss, l2_regularization
 from utils import check_accuracy
 
+from sklearn.model_selection import GridSearchCV
+
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -25,19 +28,21 @@ parser.add_argument(
     default=25,
     help='How often to print losses during training')
 
-
+# hidden_dim_ = [16, 32, 64, 128, 256]
+# batch_size_ = [32, 64, 128, 256, 512]
+# learning_rate_ = [1e-2, 5 * 1e-3, 1e-3, 5 * 1e-4, 1e-4]
 def main(args):
     # How much data to use for training
     num_train = 20000
 
     # Model architecture hyperparameters.
-    hidden_dim = 16
+    hidden_dim = 32   # 16
 
     # Optimization hyperparameters.
-    batch_size = 128
-    num_epochs = 10
-    learning_rate = 1e-4
-    reg = 1.0
+    batch_size = 32    # 128
+    num_epochs = 60
+    learning_rate = 5e-3
+    reg = 0.01
 
     ###########################################################################
     # TODO: Set hyperparameters for training your model. You can change any   #
@@ -108,10 +113,27 @@ def training_step(model, X_batch, y_batch, reg):
       parameters of the model. In particular grads[k] should be the gradient
       of the loss with respect to model.parameters()[k].
     """
-    loss, grads = None, None
+    
     ###########################################################################
     # TODO: Compute the loss and gradient for one training iteration.         #
     ###########################################################################
+    scores, cache = model.forward(X_batch)
+    data_loss, d_soft = softmax_loss(scores, y_batch)    
+    
+    reg_loss = 0
+        
+    w1 = model.params['W1']
+    w2 = model.params['W2']
+    reg_loss_w1, grad_w1 = l2_regularization(w1, reg)
+    reg_loss_w2, grad_w2 = l2_regularization(w2, reg)
+    
+    reg_loss = reg_loss_w1 + reg_loss_w2
+    
+    # Add the data loss and regression loss
+    loss = data_loss + reg_loss
+    
+    grads = model.backward(d_soft, cache)
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
