@@ -20,10 +20,22 @@ def find_projection(pts2d, pts3d):
     - M: Numpy array of shape (3,4)
 
     """
-    M = None
     ###########################################################################
     # TODO: Your code here                                                    #
     ###########################################################################
+    N = pts2d.shape[0]
+
+    A = np.zeros((2 * N, 12))
+
+    for i in range(N):
+        x, y, z = pts3d[i, :]
+        u, v = pts2d[i, :]
+
+        A[2 * i, :]     = np.array([0, 0, 0, 0, x, y, z, 1, -v*x, -v*y, -v*z, -v])
+        A[2 * i + 1, :] = np.array([x, y, z, 1, 0, 0, 0, 0, -u*x, -u*y, -u*z, -u])
+
+    _, _, V = np.linalg.svd(A)
+    M = V[-1].reshape(3, 4)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -43,10 +55,27 @@ def compute_distance(pts2d, pts3d):
     - float: a average distance you calculated (threshold is 0.01)
 
     """
-    distance = None
     ###########################################################################
     # TODO: Your code here                                                    #
     ###########################################################################
+    
+    M = find_projection(pts2d, pts3d) 
+    print(M)
+    N = pts2d.shape[0]
+    total_distance = 0
+    
+    for i in range(N):
+        x, y, w = pts3d[i, :]
+        u, v = pts2d[i, :]
+        
+        homogeneous_points = M @ np.array([x, y, w, 1])
+        # proj([x, ,y, w]) = [x/w, y/w]
+        projected = homogeneous_points / homogeneous_points[2]
+        
+        distance = np.linalg.norm(projected[:2] - np.array([u, v]))
+        total_distance += distance
+    
+    distance = total_distance / N
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -58,11 +87,11 @@ if __name__ == '__main__':
 
     # Alternately, for some of the data, we provide pts1/pts1_3D, which you
     # can check your system on via
-    """
-    data = np.load("task23/ztrans/data.npz")
-    pts2d = data['pts1']
-    pts3d = data['pts1_3D']
-    """
+    
+    # data = np.load("task23/ztrans/data.npz")
+    # pts2d = data['pts1']
+    # pts3d = data['pts1_3D']
+    
    
     foundDistance = compute_distance(pts2d, pts3d)
     print("Distance: %f" % foundDistance)
